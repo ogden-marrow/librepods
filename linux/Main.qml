@@ -196,9 +196,9 @@ ApplicationWindow {
 
                     SegmentedControl {
                         width: parent.width
-                        model: [qsTr("Off"), qsTr("Noise Cancellation"), qsTr("Transparency"), qsTr("Adaptive")]
+                        model: [qsTr("Off"), qsTr("Noise Cancel"), qsTr("Transparency"), qsTr("Adaptive")]
                         currentIndex: airPodsTrayApp.deviceInfo.noiseControlMode
-                        onCurrentIndexChanged: airPodsTrayApp.setNoiseControlModeInt(currentIndex)
+                        onActivated: (index) => airPodsTrayApp.setNoiseControlModeInt(index)
                     }
 
                     Slider {
@@ -343,14 +343,17 @@ ApplicationWindow {
 
                 Column {
                     width: parent.width
-                    spacing: 20
+                    spacing: 18
                     padding: 20
+                    topPadding: 24
 
                     Label {
                         text: qsTr("Settings")
                         font.pixelSize: 24
-                        // center the label
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        font.weight: Font.DemiBold
+                        leftPadding: 56
+                        height: 40
+                        verticalAlignment: Text.AlignVCenter
                     }
 
                     Column {
@@ -361,7 +364,7 @@ ApplicationWindow {
                         }
 
                         ComboBox {
-                            width: parent.width // Ensures full width
+                            width: settingsPageItem.width - 40
                             model: [qsTr("One Removed"), qsTr("Both Removed"), qsTr("Never")]
                             currentIndex: airPodsTrayApp.earDetectionBehavior
                             onActivated: airPodsTrayApp.earDetectionBehavior = currentIndex

@@ -11,6 +11,8 @@
 #include <QThread>
 #include <QTimer>
 #include <QIcon>
+#include <QQuickWindow>
+#include <QQuickItem>
 #include <QQuickStyle>
 #include <QProcess>
 #include <QRegularExpression>
@@ -716,8 +718,13 @@ private slots:
                 LOG_DEBUG("Unhandled buddy packet: " << data.toHex());
             }
         }
+        else if (data.startsWith(AirPodsPackets::Parse::CONNECT_SERVICE4_ACK))
+        {
+            LOG_INFO("Service 4 connected");
+        }
         else if (data.startsWith(AirPodsPackets::Parse::HANDSHAKE_ACK))
         {
+            writePacketToSocket(AirPodsPackets::Connection::CONNECT_SERVICE4, "Connect service 4 packet written: ");
             writePacketToSocket(AirPodsPackets::Connection::SET_SPECIFIC_FEATURES, "Set specific features packet written: ");
         }
         else if (data.startsWith(AirPodsPackets::Parse::FEATURES_ACK))
@@ -1158,6 +1165,12 @@ int main(int argc, char *argv[]) {
             else if (msg == "noise:adaptive") {
                 trayApp->setNoiseControlModeInt(3);
             }
+            else if (msg == "hr:on") {
+                trayApp->setHeartRateEnabled(true);
+            }
+            else if (msg == "hr:off") {
+                trayApp->setHeartRateEnabled(false);
+            }
             else
             {
                 LOG_ERROR("Unknown message received: " << msg);
@@ -1189,6 +1202,21 @@ int main(int argc, char *argv[]) {
         if (stale.exists())
             stale.remove();
     });
+    // Developer aid: LIBREPODS_SCREENSHOT=/dir saves main.png and settings.png, then quits.
+    if (qEnvironmentVariableIsSet("LIBREPODS_SCREENSHOT"))
+    {
+        const QString dir = qEnvironmentVariable("LIBREPODS_SCREENSHOT");
+        QTimer::singleShot(qEnvironmentVariableIntValue("LIBREPODS_SCREENSHOT_DELAY") > 0 ? qEnvironmentVariableIntValue("LIBREPODS_SCREENSHOT_DELAY") : 4000, &app, [&engine, dir]() {
+            auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
+            if (!win) { QCoreApplication::exit(2); return; }
+            win->grabWindow().save(dir + "/main.png");
+            QMetaObject::invokeMethod(win, "reopen", Q_ARG(QVariant, "settings"));
+            QTimer::singleShot(1500, win, [win, dir]() {
+                win->grabWindow().save(dir + "/settings.png");
+                QCoreApplication::quit();
+            });
+        });
+    }
     return app.exec();
 }
 
