@@ -149,8 +149,6 @@ namespace AirPodsPackets
     namespace Connection
     {
         static const QByteArray HANDSHAKE = QByteArray::fromHex("00000400010002000000000000000000");
-        // Opens AACP service 4 (RTBuddy: sensors, heart rate). Android sends this on every connect.
-        static const QByteArray CONNECT_SERVICE4 = QByteArray::fromHex("00000400010003000000000000000000");
         static const QByteArray SET_SPECIFIC_FEATURES = QByteArray::fromHex("040004004d00d700000000000000");
         static const QByteArray REQUEST_NOTIFICATIONS = QByteArray::fromHex("040004000f00ffffffffff");
         static const QByteArray AIRPODS_DISCONNECTED = QByteArray::fromHex("00010000");
@@ -246,7 +244,6 @@ namespace AirPodsPackets
         static const QByteArray EAR_DETECTION = QByteArray::fromHex("040004000600");
         static const QByteArray BATTERY_STATUS = QByteArray::fromHex("040004000400");
         static const QByteArray METADATA = QByteArray::fromHex("040004001d");
-        static const QByteArray CONNECT_SERVICE4_ACK = QByteArray::fromHex("010004008500");
         static const QByteArray HANDSHAKE_ACK = QByteArray::fromHex("01000400");
         static const QByteArray FEATURES_ACK = QByteArray::fromHex("040004002b00"); // Note: Only tested with airpods pro 2
     }

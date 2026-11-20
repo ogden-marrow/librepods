@@ -25,7 +25,6 @@
 #include "logger.h"
 #include "media/mediacontroller.h"
 #include "trayiconmanager.h"
-#include "heartrate.hpp"
 #include "enums.h"
 #include "battery.hpp"
 #include "BluetoothMonitor.h"
@@ -188,30 +187,6 @@ public slots:
         QBluetoothAddress btAddress(address);
         QBluetoothDeviceInfo device(btAddress, "", 0);
         connectToDevice(device);
-    }
-
-    // Starts/stops heart rate streaming (AirPods Pro 3 and later).
-    void setHeartRateEnabled(bool enabled)
-    {
-        if (enabled == m_deviceInfo->heartRateMonitoring())
-            return;
-
-        quint32 service = HeartRate::serviceForFirmware(m_firmwareVersion);
-        quint32 interval = enabled ? 1000000 : 0; // microseconds
-        QByteArray packet = HeartRate::buildSetReportInterval(service, interval, m_buddySeq++);
-
-        if (writePacketToSocket(packet, "Heart rate request written: "))
-        {
-            LOG_INFO("Heart rate monitoring " << (enabled ? "started" : "stopped")
-                                              << " (service " << service << ", firmware " << m_firmwareVersion << ")");
-            m_deviceInfo->setHeartRateMonitoring(enabled);
-        }
-        else
-        {
-            LOG_ERROR("Cannot change heart rate monitoring: not connected to AirPods");
-            // Make the UI switch snap back.
-            emit m_deviceInfo->heartRateMonitoringChanged();
-        }
     }
 
     void setNoiseControlMode(NoiseControlMode mode)
@@ -614,20 +589,6 @@ private slots:
         m_deviceInfo->setModel(parseModelNumber(m_deviceInfo->modelNumber()));
         emit modelChanged();
 
-        // Firmware version ("version3") is the 11th null-separated string after the leading one.
-        {
-            // Strings start at the device name, i.e. after the 5-byte header and 6 skipped bytes.
-            QList<QByteArray> parts = data.mid(AirPodsPackets::Parse::METADATA.size() + 6).split('\0');
-            QStringList strings;
-            for (const QByteArray &p : parts)
-                if (!p.isEmpty())
-                    strings << QString::fromUtf8(p);
-            LOG_INFO("Metadata strings: " << strings.join(" | "));
-            m_firmwareVersion = strings.value(10);
-            LOG_INFO("Firmware version: " << m_firmwareVersion);
-        }
-        m_deviceInfo->setHeartRateMonitoring(false);
-
         // Log extracted metadata
         LOG_INFO("Parsed AirPods metadata:");
         LOG_INFO("Device Name: " << m_deviceInfo->deviceName());
@@ -706,25 +667,8 @@ private slots:
     {
         LOG_DEBUG("Received: " << data.toHex());
 
-        if (data.startsWith(HeartRate::BUDDY_HEADER))
+        if (data.startsWith(AirPodsPackets::Parse::HANDSHAKE_ACK))
         {
-            if (auto bpm = HeartRate::parseBpm(data))
-            {
-                LOG_INFO("Heart rate: " << *bpm << " bpm");
-                m_deviceInfo->setHeartRate(*bpm);
-            }
-            else
-            {
-                LOG_DEBUG("Unhandled buddy packet: " << data.toHex());
-            }
-        }
-        else if (data.startsWith(AirPodsPackets::Parse::CONNECT_SERVICE4_ACK))
-        {
-            LOG_INFO("Service 4 connected");
-        }
-        else if (data.startsWith(AirPodsPackets::Parse::HANDSHAKE_ACK))
-        {
-            writePacketToSocket(AirPodsPackets::Connection::CONNECT_SERVICE4, "Connect service 4 packet written: ");
             writePacketToSocket(AirPodsPackets::Connection::SET_SPECIFIC_FEATURES, "Set specific features packet written: ");
         }
         else if (data.startsWith(AirPodsPackets::Parse::FEATURES_ACK))
@@ -1037,8 +981,6 @@ private:
     QByteArray lastEarDetectionStatus;
     MediaController* mediaController;
     TrayIconManager *trayManager;
-    quint32 m_buddySeq = 1;
-    QString m_firmwareVersion;
     BluetoothMonitor *monitor;
     QSettings *m_settings;
     AutoStartManager *m_autoStartManager;
@@ -1164,12 +1106,6 @@ int main(int argc, char *argv[]) {
             }
             else if (msg == "noise:adaptive") {
                 trayApp->setNoiseControlModeInt(3);
-            }
-            else if (msg == "hr:on") {
-                trayApp->setHeartRateEnabled(true);
-            }
-            else if (msg == "hr:off") {
-                trayApp->setHeartRateEnabled(false);
             }
             else
             {

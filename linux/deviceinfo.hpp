@@ -27,8 +27,6 @@ class DeviceInfo : public QObject
     Q_PROPERTY(bool leftPodInEar READ isLeftPodInEar NOTIFY primaryChanged)
     Q_PROPERTY(bool rightPodInEar READ isRightPodInEar NOTIFY primaryChanged)
     Q_PROPERTY(QString bluetoothAddress READ bluetoothAddress WRITE setBluetoothAddress NOTIFY bluetoothAddressChanged)
-    Q_PROPERTY(int heartRate READ heartRate NOTIFY heartRateChanged)
-    Q_PROPERTY(bool heartRateMonitoring READ heartRateMonitoring NOTIFY heartRateMonitoringChanged)
     Q_PROPERTY(QString magicAccIRK READ magicAccIRKHex CONSTANT)
     Q_PROPERTY(QString magicAccEncKey READ magicAccEncKeyHex CONSTANT)
 
@@ -59,28 +57,6 @@ public:
     }
     int noiseControlModeInt() const { return static_cast<int>(noiseControlMode()); }
     void setNoiseControlModeInt(int mode) { setNoiseControlMode(static_cast<NoiseControlMode>(mode)); }
-
-    int heartRate() const { return m_heartRate; }
-    void setHeartRate(int bpm)
-    {
-        if (m_heartRate != bpm)
-        {
-            m_heartRate = bpm;
-            emit heartRateChanged();
-        }
-    }
-
-    bool heartRateMonitoring() const { return m_heartRateMonitoring; }
-    void setHeartRateMonitoring(bool on)
-    {
-        if (m_heartRateMonitoring != on)
-        {
-            m_heartRateMonitoring = on;
-            emit heartRateMonitoringChanged();
-        }
-        if (!on)
-            setHeartRate(0);
-    }
 
     bool conversationalAwareness() const { return m_conversationalAwareness; }
     void setConversationalAwareness(bool enabled)
@@ -241,14 +217,10 @@ signals:
     void oneBudANCModeChanged(bool enabled);
     void modelChanged();
     void bluetoothAddressChanged(const QString &address);
-    void heartRateChanged();
-    void heartRateMonitoringChanged();
 
 private:
     QString m_batteryStatus;
     NoiseControlMode m_noiseControlMode = NoiseControlMode::Transparency;
-    int m_heartRate = 0;
-    bool m_heartRateMonitoring = false;
     bool m_conversationalAwareness = false;
     bool m_hearingAidEnabled = false;
     int m_adaptiveNoiseLevel = 50;
