@@ -10,6 +10,10 @@
 #include <QLoggingCategory>
 #include <QThread>
 #include <QTimer>
+#include <QIcon>
+#include <QQuickWindow>
+#include <QQuickItem>
+#include <QQuickStyle>
 #include <QProcess>
 #include <QRegularExpression>
 #include <QTranslator>
@@ -989,6 +993,7 @@ private:
 };
 
 int main(int argc, char *argv[]) {
+    QQuickStyle::setStyle("Material");
     QApplication app(argc, argv);
 
     // Load translations
@@ -1030,6 +1035,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
     app.setDesktopFileName("me.kavishdevar.librepods");
+    app.setWindowIcon(QIcon(":/icons/assets/librepods-icon.png"));
     app.setQuitOnLastWindowClosed(false);
 
     bool debugMode = false;
@@ -1132,6 +1138,21 @@ int main(int argc, char *argv[]) {
         if (stale.exists())
             stale.remove();
     });
+    // Developer aid: LIBREPODS_SCREENSHOT=/dir saves main.png and settings.png, then quits.
+    if (qEnvironmentVariableIsSet("LIBREPODS_SCREENSHOT"))
+    {
+        const QString dir = qEnvironmentVariable("LIBREPODS_SCREENSHOT");
+        QTimer::singleShot(qEnvironmentVariableIntValue("LIBREPODS_SCREENSHOT_DELAY") > 0 ? qEnvironmentVariableIntValue("LIBREPODS_SCREENSHOT_DELAY") : 4000, &app, [&engine, dir]() {
+            auto *win = qobject_cast<QQuickWindow *>(engine.rootObjects().value(0));
+            if (!win) { QCoreApplication::exit(2); return; }
+            win->grabWindow().save(dir + "/main.png");
+            QMetaObject::invokeMethod(win, "reopen", Q_ARG(QVariant, "settings"));
+            QTimer::singleShot(1500, win, [win, dir]() {
+                win->grabWindow().save(dir + "/settings.png");
+                QCoreApplication::quit();
+            });
+        });
+    }
     return app.exec();
 }
 

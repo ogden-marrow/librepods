@@ -3,114 +3,99 @@ pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 
+// Pill-shaped segmented selector with equal-width segments.
 Control {
     id: root
 
-    // Properties
-    property var model: ["Option 1", "Option 2"] // Default model
+    property var model: ["Option 1", "Option 2"]
     property int currentIndex: 0
 
-    // Colors using system palette
-    readonly property color backgroundColor: palette.light
-    readonly property color selectedColor: palette.highlight
-    readonly property color textColor: palette.buttonText
-    readonly property color selectedTextColor: palette.highlightedText
+    // Emitted only when the user picks a segment (not when currentIndex is bound).
+    signal activated(int index)
 
-    // System palette
-    SystemPalette {
-        id: palette
-    }
+    readonly property color trackColor: "#2A2F42"
+    readonly property color selectedColor: "#0A84FF"
+    readonly property color textColor: "#C7CBDA"
+    readonly property color selectedTextColor: "#FFFFFF"
 
-    // Internal properties
-    padding: 6
-    implicitHeight: 32
-    // Removed: implicitWidth: Math.max(200, model.length * 100)
-
-    // Set focus policy to enable keyboard navigation
+    implicitHeight: 40
+    padding: 3
     focusPolicy: Qt.StrongFocus
     activeFocusOnTab: true
 
-    // Styling
     background: Rectangle {
         radius: height / 2
-        color: root.backgroundColor
+        color: root.trackColor
         border.width: root.activeFocus ? 1 : 0
         border.color: root.selectedColor
     }
 
-    contentItem: Row {
-        spacing: root.padding
+    contentItem: Item {
+        // Sliding highlight
+        Rectangle {
+            id: highlight
+            readonly property real segmentWidth: root.model.length > 0 ? parent.width / root.model.length : 0
+            x: root.currentIndex * segmentWidth
+            width: segmentWidth
+            height: parent.height
+            radius: height / 2
+            color: root.selectedColor
 
-        Repeater {
-            model: root.model
+            Behavior on x {
+                NumberAnimation { duration: 180; easing.type: Easing.OutCubic }
+            }
+        }
 
-            delegate: Button {
-                id: segmentButton
-                required property int index
-                required property string modelData
-                text: modelData
-                // Removed: width: (root.availableWidth - (root.model.length - 1) * root.padding) / root.model.length
-                height: root.availableHeight
-                focusPolicy: Qt.NoFocus // Let the root control handle focus
+        Row {
+            anchors.fill: parent
 
-                // Add explicit text color
-                contentItem: Text {
-                    text: segmentButton.text
-                    font: segmentButton.font
-                    color: root.currentIndex === segmentButton.index ? root.selectedTextColor : root.textColor
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                    leftPadding: 2
-                    rightPadding: 2
-                    elide: Text.ElideRight
-                }
+            Repeater {
+                model: root.model
 
-                background: Rectangle {
-                    radius: height / 2
-                    color: root.currentIndex === segmentButton.index ? root.selectedColor : "transparent"
-                    border.width: 0
+                delegate: Item {
+                    id: segment
+                    required property int index
+                    required property string modelData
+                    width: root.model.length > 0 ? parent.width / root.model.length : 0
+                    height: parent.height
 
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: 600
-                            easing.type: Easing.OutQuad
-                        }
+                    Text {
+                        anchors.fill: parent
+                        anchors.leftMargin: 2
+                        anchors.rightMargin: 2
+                        text: segment.modelData
+                        font.pixelSize: 12
+                        font.weight: root.currentIndex === segment.index ? Font.DemiBold : Font.Normal
+                        color: root.currentIndex === segment.index ? root.selectedTextColor : root.textColor
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
                     }
-                }
 
-                onClicked: {
-                    if (root.currentIndex !== index) {
-                        root.currentIndex = index;
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.select(segment.index)
                     }
                 }
             }
         }
     }
 
-    // Handle key events for navigation
+    function select(index) {
+        if (index < 0 || index >= model.length || index === currentIndex)
+            return
+        currentIndex = index
+        activated(index)
+    }
+
     Keys.onPressed: event => {
         if (event.key === Qt.Key_Left) {
-            if (root.currentIndex > 0) {
-                root.currentIndex--;
-                event.accepted = true;
-            }
+            select(currentIndex - 1)
+            event.accepted = true
         } else if (event.key === Qt.Key_Right) {
-            if (root.currentIndex < root.model.length - 1) {
-                root.currentIndex++;
-                event.accepted = true;
-            }
-        } else if (event.key === Qt.Key_Home) {
-            root.currentIndex = 0;
-            event.accepted = true;
-        } else if (event.key === Qt.Key_End) {
-            root.currentIndex = root.model.length - 1;
-            event.accepted = true;
-        } else if (event.key >= Qt.Key_1 && event.key <= Qt.Key_9) {
-            const index = event.key - Qt.Key_1;
-            if (index <= root.model.length) {
-                root.currentIndex = index;
-                event.accepted = true;
-            }
+            select(currentIndex + 1)
+            event.accepted = true
         }
     }
 }
