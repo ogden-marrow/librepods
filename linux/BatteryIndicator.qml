@@ -11,17 +11,16 @@ Rectangle {
     property bool isCharging: false
     property string indicator: "" // "L" or "R"
     
-    readonly property bool darkMode: {
-        return palette.window.hslLightness < palette.windowText.hslLightness;
-    }
+    // The app always renders on its own dark cards, so these colors must not follow the system palette.
+    readonly property bool darkMode: true
 
     readonly property color batteryLowColor: "#FF453A"
     readonly property color batteryMediumColor: "#FFD60A"
     readonly property color batteryHighColor: "#30D158"
     readonly property color chargingColor: "#30D158"
-    readonly property color backgroundColor: palette.buttonText
-    readonly property color indicatorTextColor: palette.window
-    readonly property color textColor: palette.text
+    readonly property color backgroundColor: "#E6E9F2"
+    readonly property color indicatorTextColor: "#1F2330"
+    readonly property color textColor: "#E6E9F2"
     readonly property color borderColor: darkMode ? Qt.rgba(1, 1, 1, 0.3) : Qt.rgba(0, 0, 0, 0.3)
 
     // Size parameters
