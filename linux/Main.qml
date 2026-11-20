@@ -3,14 +3,15 @@ pragma ComponentBehavior: Bound
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Material 2.15
+import QtQuick.Layouts 1.15
 
 ApplicationWindow {
     id: mainWindow
     visible: !airPodsTrayApp.hideOnStart
     width: 460
     height: 640
-    minimumWidth: 440
-    minimumHeight: 560
+    minimumWidth: 320
+    minimumHeight: 420
     title: "LibrePods"
     Material.theme: Material.Dark
     Material.accent: "#0A84FF"
@@ -70,187 +71,224 @@ ApplicationWindow {
     Component {
         id: mainPage
         Item {
-            // Header
-            Row {
-                id: header
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: 20
-                spacing: 12
-                Image {
-                    source: "qrc:/icons/assets/librepods-icon.png"
-                    width: 40; height: 40
-                    mipmap: true
-                }
+            id: pageRoot
+
+            Flickable {
+                id: flick
+                anchors.fill: parent
+                clip: true
+                contentWidth: width
+                contentHeight: content.height + 40
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar { }
+
                 Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    Label {
-                        text: airPodsTrayApp.airpodsConnected && airPodsTrayApp.deviceInfo.deviceName !== ""
-                              ? airPodsTrayApp.deviceInfo.deviceName : "LibrePods"
-                        font.pixelSize: 18
-                        font.weight: Font.DemiBold
-                    }
-                    Row {
-                        spacing: 6
-                        Rectangle {
-                            width: 8; height: 8; radius: 4
+                    id: content
+                    y: 20
+                    x: Math.round((flick.width - width) / 2)
+                    width: Math.min(flick.width - 40, 520)
+                    spacing: 16
+
+                    // Header
+                    Item {
+                        id: header
+                        width: parent.width
+                        height: 44
+
+                        Image {
+                            id: appIcon
+                            source: "qrc:/icons/assets/librepods-icon.png"
+                            width: 40; height: 40
                             anchors.verticalCenter: parent.verticalCenter
-                            color: airPodsTrayApp.airpodsConnected ? "#30D158" : "#FF453A"
+                            mipmap: true
                         }
-                        Label {
-                            text: airPodsTrayApp.airpodsConnected ? qsTr("Connected") : qsTr("Disconnected")
-                            font.pixelSize: 12
-                            opacity: 0.7
+
+                        Column {
+                            anchors.left: appIcon.right
+                            anchors.leftMargin: 12
+                            anchors.right: gear.left
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+
+                            Label {
+                                width: parent.width
+                                elide: Text.ElideRight
+                                text: airPodsTrayApp.airpodsConnected && airPodsTrayApp.deviceInfo.deviceName !== ""
+                                      ? airPodsTrayApp.deviceInfo.deviceName : "LibrePods"
+                                font.pixelSize: 18
+                                font.weight: Font.DemiBold
+                            }
+                            Row {
+                                spacing: 6
+                                Rectangle {
+                                    width: 8; height: 8; radius: 4
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    color: airPodsTrayApp.airpodsConnected ? "#30D158" : "#FF453A"
+                                }
+                                Label {
+                                    text: airPodsTrayApp.airpodsConnected ? qsTr("Connected") : qsTr("Disconnected")
+                                    font.pixelSize: 12
+                                    opacity: 0.7
+                                }
+                            }
+                        }
+
+                        RoundButton {
+                            id: gear
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            flat: true
+                            font.family: iconFont.name
+                            font.pixelSize: 18
+                            text: "\uf958"
+                            onClicked: stackView.push(settingsPage)
                         }
                     }
-                }
-            }
 
-            // Battery card
-            Rectangle {
-                id: batteryCard
-                anchors.top: header.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: 20
-                anchors.topMargin: 20
-                height: batteryRow.implicitHeight + 40
-                radius: 18
-                color: "#1F2330"
-                border.width: 1
-                border.color: "#2B3042"
-
-                Row {
-                    id: batteryRow
-                    anchors.centerIn: parent
-                    spacing: 18
-
-                    PodColumn {
-                        visible: airPodsTrayApp.deviceInfo.battery.leftPodAvailable
-                        inEar: airPodsTrayApp.deviceInfo.leftPodInEar
-                        iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
-                        batteryLevel: airPodsTrayApp.deviceInfo.battery.leftPodLevel
-                        isCharging: airPodsTrayApp.deviceInfo.battery.leftPodCharging
-                        indicator: "L"
-                    }
-
-                    PodColumn {
-                        visible: airPodsTrayApp.deviceInfo.battery.rightPodAvailable
-                        inEar: airPodsTrayApp.deviceInfo.rightPodInEar
-                        iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
-                        batteryLevel: airPodsTrayApp.deviceInfo.battery.rightPodLevel
-                        isCharging: airPodsTrayApp.deviceInfo.battery.rightPodCharging
-                        indicator: "R"
-                    }
-
-                    PodColumn {
-                        visible: airPodsTrayApp.deviceInfo.battery.caseAvailable
-                        inEar: true
-                        iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.caseIcon
-                        batteryLevel: airPodsTrayApp.deviceInfo.battery.caseLevel
-                        isCharging: airPodsTrayApp.deviceInfo.battery.caseCharging
-                    }
-
-                    PodColumn {
-                        visible: airPodsTrayApp.deviceInfo.battery.headsetAvailable
-                        inEar: true
-                        iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
-                        batteryLevel: airPodsTrayApp.deviceInfo.battery.headsetLevel
-                        isCharging: airPodsTrayApp.deviceInfo.battery.headsetCharging
-                    }
-
-                    Label {
-                        visible: !airPodsTrayApp.airpodsConnected
-                        text: qsTr("Connect your AirPods to see battery status")
-                        opacity: 0.6
-                    }
-                }
-            }
-
-            // Controls card
-            Rectangle {
-                id: controlsCard
-                visible: airPodsTrayApp.airpodsConnected
-                anchors.top: batteryCard.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.margins: 20
-                anchors.topMargin: 16
-                height: controlsColumn.implicitHeight + 40
-                radius: 18
-                color: "#1F2330"
-                border.width: 1
-                border.color: "#2B3042"
-
-                Column {
-                    id: controlsColumn
-                    anchors.fill: parent
-                    anchors.margins: 20
-                    spacing: 14
-
-                    Label {
-                        text: qsTr("Noise Control")
-                        font.pixelSize: 13
-                        opacity: 0.6
-                    }
-
-                    SegmentedControl {
+                    // Battery card: the pod row shrinks to fit instead of overflowing.
+                    Rectangle {
+                        id: batteryCard
                         width: parent.width
-                        model: [qsTr("Off"), qsTr("Noise Cancel"), qsTr("Transparency"), qsTr("Adaptive")]
-                        currentIndex: airPodsTrayApp.deviceInfo.noiseControlMode
-                        onActivated: (index) => airPodsTrayApp.setNoiseControlModeInt(index)
-                    }
+                        readonly property real fit: Math.min(1, (width - 32) / Math.max(batteryRow.implicitWidth, 1))
+                        readonly property bool hasDevice: airPodsTrayApp.airpodsConnected
+                        height: (hasDevice ? batteryRow.implicitHeight * fit : emptyLabel.implicitHeight) + 40
+                        radius: 18
+                        color: "#1F2330"
+                        border.width: 1
+                        border.color: "#2B3042"
 
-                    Slider {
-                        width: parent.width
-                        visible: airPodsTrayApp.deviceInfo.adaptiveModeActive
-                        from: 0
-                        to: 100
-                        stepSize: 1
-                        value: airPodsTrayApp.deviceInfo.adaptiveNoiseLevel
+                        Row {
+                            id: batteryRow
+                            visible: batteryCard.hasDevice
+                            anchors.centerIn: parent
+                            spacing: 18
+                            scale: batteryCard.fit
 
-                        Timer {
-                            id: debounceTimer
-                            interval: 500
-                            onTriggered: if (!parent.pressed) airPodsTrayApp.setAdaptiveNoiseLevel(parent.value)
+                            PodColumn {
+                                visible: airPodsTrayApp.deviceInfo.battery.leftPodAvailable
+                                inEar: airPodsTrayApp.deviceInfo.leftPodInEar
+                                iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
+                                batteryLevel: airPodsTrayApp.deviceInfo.battery.leftPodLevel
+                                isCharging: airPodsTrayApp.deviceInfo.battery.leftPodCharging
+                                indicator: "L"
+                            }
+
+                            PodColumn {
+                                visible: airPodsTrayApp.deviceInfo.battery.rightPodAvailable
+                                inEar: airPodsTrayApp.deviceInfo.rightPodInEar
+                                iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
+                                batteryLevel: airPodsTrayApp.deviceInfo.battery.rightPodLevel
+                                isCharging: airPodsTrayApp.deviceInfo.battery.rightPodCharging
+                                indicator: "R"
+                            }
+
+                            PodColumn {
+                                visible: airPodsTrayApp.deviceInfo.battery.caseAvailable
+                                inEar: true
+                                iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.caseIcon
+                                batteryLevel: airPodsTrayApp.deviceInfo.battery.caseLevel
+                                isCharging: airPodsTrayApp.deviceInfo.battery.caseCharging
+                            }
+
+                            PodColumn {
+                                visible: airPodsTrayApp.deviceInfo.battery.headsetAvailable
+                                inEar: true
+                                iconSource: "qrc:/icons/assets/" + airPodsTrayApp.deviceInfo.podIcon
+                                batteryLevel: airPodsTrayApp.deviceInfo.battery.headsetLevel
+                                isCharging: airPodsTrayApp.deviceInfo.battery.headsetCharging
+                            }
                         }
-
-                        onPressedChanged: if (!pressed) airPodsTrayApp.setAdaptiveNoiseLevel(value)
-                        onValueChanged: if (pressed) debounceTimer.restart()
 
                         Label {
-                            text: qsTr("Adaptive Noise Level: ") + parent.value
-                            anchors.top: parent.bottom
-                            font.pixelSize: 12
+                            id: emptyLabel
+                            visible: !batteryCard.hasDevice
+                            anchors.centerIn: parent
+                            width: parent.width - 40
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.WordWrap
+                            text: qsTr("Connect your AirPods to see battery status")
                             opacity: 0.6
                         }
                     }
 
-                    Switch {
+                    // Controls card
+                    Rectangle {
+                        id: controlsCard
+                        visible: airPodsTrayApp.airpodsConnected
                         width: parent.width
-                        text: qsTr("Conversational Awareness")
-                        checked: airPodsTrayApp.deviceInfo.conversationalAwareness
-                        onCheckedChanged: airPodsTrayApp.setConversationalAwareness(checked)
-                    }
+                        height: controlsColumn.implicitHeight + 40
+                        radius: 18
+                        color: "#1F2330"
+                        border.width: 1
+                        border.color: "#2B3042"
 
-                    Switch {
-                        width: parent.width
-                        text: qsTr("Hearing Aid")
-                        checked: airPodsTrayApp.deviceInfo.hearingAidEnabled
-                        onCheckedChanged: airPodsTrayApp.setHearingAidEnabled(checked)
+                        Column {
+                            id: controlsColumn
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            anchors.margins: 20
+                            spacing: 14
+
+                            Label {
+                                text: qsTr("Noise Control")
+                                font.pixelSize: 13
+                                opacity: 0.6
+                            }
+
+                            SegmentedControl {
+                                width: parent.width
+                                model: [qsTr("Off"), qsTr("Noise Cancel"), qsTr("Transparency"), qsTr("Adaptive")]
+                                currentIndex: airPodsTrayApp.deviceInfo.noiseControlMode
+                                onActivated: (index) => airPodsTrayApp.setNoiseControlModeInt(index)
+                            }
+
+                            Column {
+                                width: parent.width
+                                visible: airPodsTrayApp.deviceInfo.adaptiveModeActive
+                                spacing: 2
+
+                                Slider {
+                                    id: adaptiveSlider
+                                    width: parent.width
+                                    from: 0
+                                    to: 100
+                                    stepSize: 1
+                                    value: airPodsTrayApp.deviceInfo.adaptiveNoiseLevel
+
+                                    Timer {
+                                        id: debounceTimer
+                                        interval: 500
+                                        onTriggered: if (!adaptiveSlider.pressed) airPodsTrayApp.setAdaptiveNoiseLevel(adaptiveSlider.value)
+                                    }
+
+                                    onPressedChanged: if (!pressed) airPodsTrayApp.setAdaptiveNoiseLevel(value)
+                                    onValueChanged: if (pressed) debounceTimer.restart()
+                                }
+
+                                Label {
+                                    text: qsTr("Adaptive Noise Level: ") + adaptiveSlider.value
+                                    font.pixelSize: 12
+                                    opacity: 0.6
+                                }
+                            }
+
+                            WrappingSwitch {
+                                width: parent.width
+                                text: qsTr("Conversational Awareness")
+                                checked: airPodsTrayApp.deviceInfo.conversationalAwareness
+                                onCheckedChanged: airPodsTrayApp.setConversationalAwareness(checked)
+                            }
+
+                            WrappingSwitch {
+                                width: parent.width
+                                text: qsTr("Hearing Aid")
+                                checked: airPodsTrayApp.deviceInfo.hearingAidEnabled
+                                onCheckedChanged: airPodsTrayApp.setHearingAidEnabled(checked)
+                            }
+                        }
                     }
                 }
-            }
-
-            RoundButton {
-                anchors.top: parent.top
-                anchors.right: parent.right
-                anchors.margins: 16
-                flat: true
-                font.family: iconFont.name
-                font.pixelSize: 18
-                text: "\uf958"
-                onClicked: stackView.push(settingsPage)
             }
         }
     }
@@ -261,40 +299,69 @@ ApplicationWindow {
             id: settingsPageItem
             title: qsTr("Settings")
 
-            ScrollView {
+            Flickable {
+                id: settingsFlick
                 anchors.fill: parent
+                clip: true
+                contentWidth: width
+                contentHeight: settingsColumn.height + 40
+                boundsBehavior: Flickable.StopAtBounds
+                ScrollBar.vertical: ScrollBar { }
 
                 Column {
-                    width: parent.width
+                    id: settingsColumn
+                    y: 20
+                    x: Math.round((settingsFlick.width - width) / 2)
+                    width: Math.min(settingsFlick.width - 40, 520)
                     spacing: 18
-                    padding: 20
-                    topPadding: 24
 
-                    Label {
-                        text: qsTr("Settings")
-                        font.pixelSize: 24
-                        font.weight: Font.DemiBold
-                        leftPadding: 56
-                        height: 40
-                        verticalAlignment: Text.AlignVCenter
+                    // Header: back button + title
+                    Item {
+                        width: parent.width
+                        height: 44
+
+                        RoundButton {
+                            id: backButton
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            font.family: iconFont.name
+                            font.pixelSize: 18
+                            text: "\uecb1" // U+ECB1
+                            onClicked: stackView.pop()
+                        }
+
+                        Label {
+                            anchors.left: backButton.right
+                            anchors.leftMargin: 12
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            elide: Text.ElideRight
+                            text: qsTr("Settings")
+                            font.pixelSize: 24
+                            font.weight: Font.DemiBold
+                        }
                     }
 
                     Column {
+                        width: parent.width
                         spacing: 5 // Small gap between label and ComboBox
 
                         Label {
+                            width: parent.width
+                            wrapMode: Text.WordWrap
                             text: qsTr("Pause Behavior When Removing AirPods:")
                         }
 
                         ComboBox {
-                            width: settingsPageItem.width - 40
+                            width: parent.width
                             model: [qsTr("One Removed"), qsTr("Both Removed"), qsTr("Never")]
                             currentIndex: airPodsTrayApp.earDetectionBehavior
                             onActivated: airPodsTrayApp.earDetectionBehavior = currentIndex
                         }
                     }
 
-                    Switch {
+                    WrappingSwitch {
+                        width: parent.width
                         text: qsTr("Cross-Device Connectivity with Android")
                         checked: airPodsTrayApp.crossDeviceEnabled
                         onCheckedChanged: {
@@ -302,19 +369,22 @@ ApplicationWindow {
                         }
                     }
 
-                    Switch {
+                    WrappingSwitch {
+                        width: parent.width
                         text: qsTr("Auto-Start on Login")
                         checked: airPodsTrayApp.autoStartManager.autoStartEnabled
                         onCheckedChanged: airPodsTrayApp.autoStartManager.autoStartEnabled = checked
                     }
 
-                    Switch {
+                    WrappingSwitch {
+                        width: parent.width
                         text: qsTr("Enable System Notifications")
                         checked: airPodsTrayApp.notificationsEnabled
                         onCheckedChanged: airPodsTrayApp.notificationsEnabled = checked
                     }
 
-                    Switch {
+                    WrappingSwitch {
+                        width: parent.width
                         visible: airPodsTrayApp.airpodsConnected
                         text: qsTr("One Bud ANC Mode")
                         checked: airPodsTrayApp.deviceInfo.oneBudANCMode
@@ -327,11 +397,14 @@ ApplicationWindow {
                         }
                     }
 
-                    Row {
-                        spacing: 5
+                    RowLayout {
+                        width: parent.width
+                        spacing: 8
+
                         Label {
+                            Layout.fillWidth: true
+                            wrapMode: Text.WordWrap
                             text: qsTr("Bluetooth Retry Attempts:")
-                            anchors.verticalCenter: parent.verticalCenter
                         }
                         SpinBox {
                             from: 1
@@ -341,12 +414,15 @@ ApplicationWindow {
                         }
                     }
 
-                    Row {
+                    RowLayout {
+                        width: parent.width
                         spacing: 10
                         visible: airPodsTrayApp.airpodsConnected
 
                         TextField {
                             id: newNameField
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 80
                             placeholderText: airPodsTrayApp.deviceInfo.deviceName
                             maximumLength: 32
                         }
@@ -357,12 +433,15 @@ ApplicationWindow {
                         }
                     }
 
-                    Row {
+                    RowLayout {
+                        width: parent.width
                         spacing: 10
                         visible: airPodsTrayApp.airpodsConnected
 
                         TextField {
                             id: newPhoneMacField
+                            Layout.fillWidth: true
+                            Layout.minimumWidth: 80
                             placeholderText: (PHONE_MAC_ADDRESS !== "" ? PHONE_MAC_ADDRESS : "00:00:00:00:00:00")
                             maximumLength: 32
                         }
@@ -372,7 +451,6 @@ ApplicationWindow {
                             onClicked: airPodsTrayApp.setPhoneMac(newPhoneMacField.text)
                         }
                     }
-
 
                     Button {
                         text: qsTr("Show Magic Cloud Keys QR")
@@ -385,17 +463,6 @@ ApplicationWindow {
                         irk: airPodsTrayApp.deviceInfo.magicAccIRK
                     }
                 }
-            }
-
-            // Floating back button
-            RoundButton {
-                anchors.top: parent.top
-                anchors.left: parent.left
-                anchors.margins: 10
-                font.family: iconFont.name
-                font.pixelSize: 18
-                text: "\uecb1" // U+ECB1
-                onClicked: stackView.pop()
             }
         }
     }

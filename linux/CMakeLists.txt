@@ -53,6 +53,7 @@ qt_add_qml_module(librepods
         Main.qml
         BatteryIndicator.qml
         SegmentedControl.qml
+        WrappingSwitch.qml
         PodColumn.qml
         Icon.qml
         KeysQRDialog.qml
